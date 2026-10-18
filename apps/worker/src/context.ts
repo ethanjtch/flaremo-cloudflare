@@ -286,6 +286,24 @@ export async function getRequestContext(c: Context<HonoBindings>) {
  * remains fail-closed and is never downgraded to anonymous access.
  */
 export async function getOptionalRequestContext(c: Context<HonoBindings>) {
+  if (
+    !c.req.raw.headers.has("authorization") &&
+    !c.req.raw.headers.has("cookie")
+  ) {
+    return {
+      db: getFlareMoDb(c.env),
+      user: null,
+      authUserId: null,
+      credential: "anonymous" as const,
+      bearerSession: false,
+      nativeAccessToken: false,
+      session: null,
+      authUser: undefined,
+      memoFilterScanLimit: memoFilterScanLimit(c.env),
+      limits: c.get("planLimits") ?? SELF_HOST_UNLIMITED,
+      userLimits: null,
+    };
+  }
   try {
     return await getRequestContext(c);
   } catch (error) {

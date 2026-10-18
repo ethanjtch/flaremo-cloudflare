@@ -105,12 +105,15 @@ export async function getPublicInstanceContext(
   c: ConnectContext,
 ): Promise<ConnectRequestContext> {
   const db = getFlareMoDb(c.env);
-  const user =
-    (await getFlaremoUserCached(db, "users/owner")) ??
-    publicOwnerFallback(c.env.FLAREMO_SINGLE_USER_NAME);
+  let user: UserRow | null = null;
+  try {
+    user = await getFlaremoUserCached(db, "users/owner");
+  } catch {
+    // D1 quota limit or network fallback
+  }
   return {
     db,
-    user,
+    user: user ?? publicOwnerFallback(c.env.FLAREMO_SINGLE_USER_NAME),
     authUserId: "",
     credential: "session",
     bearerSession: false,
