@@ -40,6 +40,10 @@ export const embeddingTasks = sqliteTable(
       table.status,
       table.nextAttemptAt,
     ),
+    index("embedding_tasks_status_updated_idx").on(
+      table.status,
+      table.updatedAt,
+    ),
     index("embedding_tasks_resource_idx").on(
       table.resourceType,
       table.resourceId,

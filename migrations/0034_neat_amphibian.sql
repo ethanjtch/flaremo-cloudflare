@@ -1,0 +1,2 @@
+CREATE INDEX `memos_webhook_events_created_expanded_idx` ON `memos_webhook_events` (`created_at`,`expanded_at`);--> statement-breakpoint
+CREATE INDEX `embedding_tasks_status_updated_idx` ON `embedding_tasks` (`status`,`updated_at`);

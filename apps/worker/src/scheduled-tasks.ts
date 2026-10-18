@@ -7,6 +7,7 @@ import {
   deleteExpiredDataTasks,
   dispatchEmbeddingOutbox,
   dispatchMemosWebhookOutbox,
+  EMBEDDING_RETENTION_MS,
   expireStaleDataTasks,
   failDataTask,
   failMemberRemovalJob,
@@ -22,12 +23,15 @@ import {
   listQueuedDataExportTasks,
   listQueuedMemberRemovalJobs,
   MEMOS_SSE_RETENTION_MS,
+  MEMOS_WEBHOOK_RETENTION_MS,
   markArticleAttachmentsDeleting,
   type PlanLimits,
   type PushKeys,
   parseUserPlanLimits,
+  pruneEmbeddingOutbox,
   pruneEmptyHourlyCountRows,
   pruneMemosSseEvents,
+  pruneMemosWebhookOutbox,
   purgeArticleRow,
   pushNotificationToUser,
   recalibrateAllHourlyCounts,
@@ -224,6 +228,14 @@ export async function runScheduledMaintenance(
   const ssePruned = await pruneMemosSseEvents(
     db,
     new Date(scheduledTime - MEMOS_SSE_RETENTION_MS),
+  );
+  await pruneMemosWebhookOutbox(
+    db,
+    new Date(scheduledTime - MEMOS_WEBHOOK_RETENTION_MS),
+  );
+  await pruneEmbeddingOutbox(
+    db,
+    new Date(scheduledTime - EMBEDDING_RETENTION_MS),
   );
   await dispatchEmbeddingOutbox(db, {
     provider: createEmbeddingProvider(env),

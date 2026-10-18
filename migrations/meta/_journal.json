@@ -239,6 +239,13 @@
       "when": 1790479307026,
       "tag": "0033_large_multiple_man",
       "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "6",
+      "when": 1792311731267,
+      "tag": "0034_neat_amphibian",
+      "breakpoints": true
     }
   ]
 }

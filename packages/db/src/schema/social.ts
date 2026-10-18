@@ -60,6 +60,10 @@ export const memosWebhookEvents = sqliteTable(
       table.expandedAt,
       table.createdAt,
     ),
+    index("memos_webhook_events_created_expanded_idx").on(
+      table.createdAt,
+      table.expandedAt,
+    ),
   ],
 );
 

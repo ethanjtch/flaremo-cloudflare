@@ -444,6 +444,33 @@ async function maintenanceOptions(
  * it keeps request outbox dispatch and Cron maintenance coupled to the same
  * plan-limit policy as the HTTP application.
  */
+function isMutatingRequest(request: Request, response: Response): boolean {
+  if (!response.ok) return false;
+  const method = request.method.toUpperCase();
+  if (method === "GET" || method === "HEAD" || method === "OPTIONS") {
+    return false;
+  }
+  try {
+    const url = new URL(request.url);
+    if (url.pathname.startsWith("/memos.api.v1.")) {
+      const parts = url.pathname.split("/");
+      const rpcMethod = parts[parts.length - 1] ?? "";
+      if (
+        rpcMethod.startsWith("Get") ||
+        rpcMethod.startsWith("List") ||
+        rpcMethod.startsWith("Search") ||
+        rpcMethod.startsWith("BatchGet") ||
+        rpcMethod.startsWith("Check")
+      ) {
+        return false;
+      }
+    }
+  } catch {
+    // If URL parsing fails, retain default behavior
+  }
+  return true;
+}
+
 export function createFlareMoWorker(
   options: FlareMoAppOptions = {},
 ): ExportedHandler<FlareMoEnv> {
@@ -461,8 +488,7 @@ export function createFlareMoWorker(
       // Outbox sweeps are maintenance: mutating requests trigger them (they
       // are the ones that can enqueue work), so reads skip the fixed
       // per-request query tax. The daily cron sweeps whatever reads missed.
-      const method = request.method.toUpperCase();
-      if (method !== "GET" && method !== "HEAD" && method !== "OPTIONS") {
+      if (isMutatingRequest(request, response)) {
         const db = getFlareMoDb(env);
         // `ExecutionContext` is part of the Worker handler contract. Keeping
         // this post-response work on `waitUntil` avoids changing the route-only

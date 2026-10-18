@@ -130,9 +130,12 @@ export async function dispatchEmbeddingOutbox(
       }
     }
   }
-
-  await pruneEmbeddingOutbox(db, new Date(now.getTime() - RETENTION_MS));
 }
+
+export {
+  pruneEmbeddingOutbox,
+  RETENTION_MS as EMBEDDING_RETENTION_MS,
+} from "./embedding-task-store";
 
 async function embeddingBudgetAvailable(
   db: FlareMoDb,

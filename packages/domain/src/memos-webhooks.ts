@@ -126,9 +126,9 @@ export async function dispatchMemosWebhookOutbox(
       }
     }),
   );
-
-  await pruneMemosWebhookOutbox(db, new Date(now.getTime() - RETENTION_MS));
 }
+
+export const MEMOS_WEBHOOK_RETENTION_MS = RETENTION_MS;
 
 export async function pruneMemosWebhookOutbox(db: FlareMoDb, before: Date) {
   const cutoff = before.toISOString();
