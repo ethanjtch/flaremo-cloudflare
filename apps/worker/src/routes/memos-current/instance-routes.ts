@@ -1,6 +1,6 @@
 import { FLAREMO_API_VERSION } from "@flaremo/contracts";
 import { currentUserToDto, publicUserToDto } from "@flaremo/memos";
-import type { Hono } from "hono";
+import type { Context, Hono } from "hono";
 import {
   getFlareMoDb,
   getOptionalRequestContext,
@@ -11,22 +11,38 @@ import { currentJsonError } from "../../memos-compat/current-errors";
 import { getPublicInstanceContext } from "../memos-connect/shared";
 import { isLegacyWireRequest } from "./helpers";
 
+async function resolveInstanceProfileAdmin(c: Context<HonoBindings>) {
+  try {
+    const db = getFlareMoDb(c.env);
+    const optionalContext = await getOptionalRequestContext(c);
+    const publicContext = optionalContext.user
+      ? optionalContext
+      : await getPublicInstanceContext(c);
+    return optionalContext.authUserId
+      ? currentUserToDto(
+          optionalContext.user,
+          await getAuthUserCached(db, optionalContext.authUserId),
+        )
+      : publicUserToDto(publicContext.user);
+  } catch {
+    const timestamp = new Date(0).toISOString();
+    return {
+      name: "users/owner",
+      role: "ADMIN" as const,
+      username: "owner",
+      displayName: c.env.FLAREMO_SINGLE_USER_NAME ?? "Owner",
+      state: "NORMAL" as const,
+      createTime: timestamp,
+      updateTime: timestamp,
+    };
+  }
+}
+
 export function registerInstanceRoutes(app: Hono<HonoBindings>) {
   app.get("/instance/profile", async (c, next) => {
     if (isLegacyWireRequest(c)) return next();
     try {
-      const db = getFlareMoDb(c.env);
-      const optionalContext = await getOptionalRequestContext(c);
-      const publicContext = optionalContext.user
-        ? optionalContext
-        : await getPublicInstanceContext(c);
-      const admin = optionalContext.authUserId
-        ? currentUserToDto(
-            optionalContext.user,
-            await getAuthUserCached(db, optionalContext.authUserId),
-          )
-        : publicUserToDto(publicContext.user);
-
+      const admin = await resolveInstanceProfileAdmin(c);
       return c.json({
         version: FLAREMO_API_VERSION,
         demo: false,
@@ -41,18 +57,7 @@ export function registerInstanceRoutes(app: Hono<HonoBindings>) {
   app.get("/workspace/profile", async (c, next) => {
     if (isLegacyWireRequest(c)) return next();
     try {
-      const db = getFlareMoDb(c.env);
-      const optionalContext = await getOptionalRequestContext(c);
-      const publicContext = optionalContext.user
-        ? optionalContext
-        : await getPublicInstanceContext(c);
-      const admin = optionalContext.authUserId
-        ? currentUserToDto(
-            optionalContext.user,
-            await getAuthUserCached(db, optionalContext.authUserId),
-          )
-        : publicUserToDto(publicContext.user);
-
+      const admin = await resolveInstanceProfileAdmin(c);
       return c.json({
         version: FLAREMO_API_VERSION,
         demo: false,

@@ -30,13 +30,31 @@ export async function connectInstanceMethod(
   const body = record(value);
   switch (method) {
     case "GetInstanceProfile": {
-      const bootstrap = await getAuthBootstrapStatus(context.db);
-      const admin = context.authUserId
-        ? currentUserToDto(
-            context.user,
-            await getAuthUserCached(context.db, context.authUserId),
-          )
-        : publicUserToDto(context.user);
+      let admin:
+        | ReturnType<typeof currentUserToDto>
+        | ReturnType<typeof publicUserToDto>;
+      let needsSetup = false;
+      try {
+        const bootstrap = await getAuthBootstrapStatus(context.db);
+        needsSetup = bootstrap.state !== "complete";
+        admin = context.authUserId
+          ? currentUserToDto(
+              context.user,
+              await getAuthUserCached(context.db, context.authUserId),
+            )
+          : publicUserToDto(context.user);
+      } catch {
+        const timestamp = new Date(0).toISOString();
+        admin = {
+          name: "users/owner",
+          role: "ADMIN" as const,
+          username: "owner",
+          displayName: c.env.FLAREMO_SINGLE_USER_NAME ?? "Owner",
+          state: "NORMAL" as const,
+          createTime: timestamp,
+          updateTime: timestamp,
+        };
+      }
       return connectValue(
         c,
         {
@@ -44,7 +62,7 @@ export async function connectInstanceMethod(
           demo: false,
           instanceUrl: c.env.FLAREMO_PUBLIC_URL ?? new URL(c.req.url).origin,
           admin,
-          needsSetup: bootstrap.state !== "complete",
+          needsSetup,
         },
         transport,
       );
