@@ -2,7 +2,9 @@ import {
   beginFlaremoMemberRemoval,
   ForbiddenError,
   finalizeFlaremoMemberRemoval,
+  getMemoStats,
   getMemosPersonalAccessToken,
+  getStoredSetting,
   listFlaremoUsers,
   listMemosPersonalAccessTokens,
   NotFoundError,
@@ -19,6 +21,7 @@ import { currentJsonError } from "../../memos-compat/current-errors";
 import { registerCompatMember } from "../../memos-compat/member-service";
 import { personalAccessTokenToDto } from "../../memos-compat/pat";
 import { memosCompatUserDto } from "../../memos-compat/user-dto";
+import { userStatsFromMemoStats } from "../memos-connect/user-methods/users";
 import {
   assertCurrentUserPath,
   assertOwnerUser,
@@ -189,6 +192,48 @@ export function registerUserRoutes(app: Hono<HonoBindings>) {
       await cleanupFlaremoArtifacts(c.env, artifacts);
       await finalizeFlaremoMemberRemoval(context.db, userId, artifacts);
       return c.body(null, 200);
+    } catch (error) {
+      return currentJsonError(c, error);
+    }
+  });
+
+  app.get("/users/:user/settings/:setting", async (c, next) => {
+    if (isLegacyWireRequest(c)) return next();
+    try {
+      const context = await getRequestContext(c);
+      const settingParam = c.req.param("setting")?.toUpperCase() ?? "GENERAL";
+      const stored = await getStoredSetting(
+        context.db,
+        context.user,
+        `memos.user.${settingParam}`,
+      );
+      const name = `users/${c.req.param("user")}/settings/${settingParam}`;
+      const val =
+        stored?.value && typeof stored.value === "object"
+          ? (stored.value as Record<string, unknown>)
+          : {};
+      return c.json({
+        name,
+        generalSetting: {
+          locale: (val.locale as string) ?? "en",
+          memoVisibility: (val.memoVisibility as string) ?? "PRIVATE",
+          theme: (val.theme as string) ?? "",
+        },
+        ...val,
+      });
+    } catch (error) {
+      return currentJsonError(c, error);
+    }
+  });
+
+  app.get("/users/:user/stats", async (c, next) => {
+    if (isLegacyWireRequest(c)) return next();
+    try {
+      const context = await getRequestContext(c);
+      const stats = await getMemoStats(context.db, context.user, {
+        time_zone: "UTC",
+      });
+      return c.json(userStatsFromMemoStats(context.user.id, stats));
     } catch (error) {
       return currentJsonError(c, error);
     }

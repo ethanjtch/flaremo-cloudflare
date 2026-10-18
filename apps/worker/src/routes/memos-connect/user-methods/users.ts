@@ -236,7 +236,7 @@ export async function connectUsersMethod(
   }
 }
 
-function userStatsFromMemoStats(
+export function userStatsFromMemoStats(
   userId: string,
   stats: Awaited<ReturnType<typeof getMemoStats>>,
 ) {

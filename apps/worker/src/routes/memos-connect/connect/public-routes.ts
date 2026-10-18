@@ -47,20 +47,26 @@ export async function connectPublicRoute(
     return connectValue(c, { identityProviders: [] }, binaryTransport);
   }
   if (
-    service === "memos.api.v1.InstanceService" &&
+    (service === "memos.api.v1.InstanceService" ||
+      service === "memos.api.v1.WorkspaceService") &&
     [
       "GetInstanceProfile",
+      "GetWorkspaceProfile",
       "GetInstanceSetting",
+      "GetWorkspaceSetting",
       "BatchGetInstanceSettings",
     ].includes(method)
   ) {
+    const canonicalMethod = method
+      .replace(/^GetWorkspaceProfile$/, "GetInstanceProfile")
+      .replace(/^GetWorkspaceSetting$/, "GetInstanceSetting");
     const optionalContext = await getOptionalRequestContext(c);
     return await connectInstanceMethod(
       c,
       optionalContext.user
         ? (optionalContext as ConnectRequestContext)
         : await getPublicInstanceContext(c),
-      method,
+      canonicalMethod,
       body,
       binaryTransport,
     );

@@ -58,11 +58,6 @@ export function registerAttachmentRoutes(app: Hono<HonoBindings>) {
       const body = unwrapAttachmentBody(
         currentAttachmentBodySchema.parse(await readCurrentJsonObject(c)),
       );
-      if (body.attachmentId) {
-        throw new CompatValidationError(
-          "attachmentId is not supported; FlareMo generates attachment resource names",
-        );
-      }
       if (body.externalLink) {
         throw new CompatValidationError(
           "External attachments are not supported by FlareMo",

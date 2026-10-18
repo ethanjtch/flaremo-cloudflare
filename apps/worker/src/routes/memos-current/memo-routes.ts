@@ -1,11 +1,13 @@
 import {
   bindMemoAttachments,
   createMemo,
+  createMemoComment,
   createMemoShare,
   getMemoByIdForViewer,
   getPublicShareByToken,
   listAttachmentsForMemosForViewer,
   listMemoAttachmentsForViewer,
+  listMemoComments,
   listMemoShares,
   listMemosForViewer,
   moveMemoToTrash,
@@ -99,11 +101,6 @@ export function registerMemoRoutes(app: Hono<HonoBindings>) {
       const body = unwrapMemoBody(
         currentMemoBodySchema.parse(await readCurrentJsonObject(c)),
       );
-      if (body.memoId) {
-        throw new CompatValidationError(
-          "memoId is not supported; FlareMo generates memo resource names",
-        );
-      }
       if (typeof body.content !== "string" || !body.content.trim()) {
         throw new CompatValidationError("Memo content is required");
       }
@@ -338,6 +335,65 @@ export function registerMemoRoutes(app: Hono<HonoBindings>) {
         currentMemoToDto(share.memo, share.user, {
           attachments: share.attachments,
         }),
+      );
+    } catch (error) {
+      return currentJsonError(c, error);
+    }
+  });
+
+  app.get("/memos/:memo/comments", async (c, next) => {
+    if (isLegacyWireRequest(c)) return next();
+    try {
+      const context = await getRequestContext(c);
+      const memoName = normalizeMemoName(c.req.param("memo"));
+      const result = await listMemoComments(context.db, context.user, {
+        memoName,
+        pageSize: c.req.query("pageSize")
+          ? Number(c.req.query("pageSize"))
+          : 50,
+        pageToken: c.req.query("pageToken") || undefined,
+        orderBy: c.req.query("orderBy") || "create_time desc",
+      });
+      return c.json({
+        memos: await Promise.all(
+          result.memos.map(async (memo) =>
+            currentMemoToDto(memo, await resolveMemoCreator(context, memo)),
+          ),
+        ),
+        ...(result.nextPageToken
+          ? { nextPageToken: result.nextPageToken }
+          : {}),
+      });
+    } catch (error) {
+      return currentJsonError(c, error);
+    }
+  });
+
+  app.post("/memos/:memo/comments", async (c, next) => {
+    if (isLegacyWireRequest(c)) return next();
+    try {
+      const context = await getRequestContext(c);
+      const memoName = normalizeMemoName(c.req.param("memo"));
+      const body = await readCurrentJsonObject(c);
+      const content =
+        typeof body.content === "string" ? body.content.trim() : "";
+      if (!content) {
+        throw new CompatValidationError("Comment content is required");
+      }
+      const created = await createMemoComment(
+        context.db,
+        context.user,
+        memoName,
+        {
+          content,
+          payload: compatMemoPayload(body),
+          source: "memos-api",
+        },
+        { userLimits: context.userLimits },
+      );
+      return c.json(
+        currentMemoToDto(created, await resolveMemoCreator(context, created)),
+        200,
       );
     } catch (error) {
       return currentJsonError(c, error);

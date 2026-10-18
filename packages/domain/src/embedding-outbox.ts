@@ -10,8 +10,6 @@ import {
   markEmbeddingTaskFailed,
   markEmbeddingTaskSucceeded,
   markResourceEmbeddingError,
-  pruneEmbeddingOutbox,
-  RETENTION_MS,
   recoverExpiredEmbeddingLeases,
 } from "./embedding-task-store";
 import type { PlanLimits, UserPlanLimits } from "./limits";

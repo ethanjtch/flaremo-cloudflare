@@ -103,11 +103,17 @@ export async function connectDispatch(
   if (service === "memos.api.v1.UserService") {
     return await connectUserMethod(c, context, method, body, binaryTransport);
   }
-  if (service === "memos.api.v1.InstanceService") {
+  if (
+    service === "memos.api.v1.InstanceService" ||
+    service === "memos.api.v1.WorkspaceService"
+  ) {
+    const canonicalMethod = method
+      .replace(/^GetWorkspaceProfile$/, "GetInstanceProfile")
+      .replace(/^GetWorkspaceSetting$/, "GetInstanceSetting");
     return await connectInstanceMethod(
       c,
       context,
-      method,
+      canonicalMethod,
       body,
       binaryTransport,
     );
