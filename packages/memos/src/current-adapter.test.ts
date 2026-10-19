@@ -6,6 +6,8 @@ import {
   currentMemoToDto,
   currentRelationToDto,
   currentShareToDto,
+  memosTimestamp,
+  publicUserToDto,
 } from "./current-adapter";
 
 const user = {
@@ -46,6 +48,17 @@ const attachment = {
 } as unknown as AttachmentRow;
 
 describe("current Memos wire adapter", () => {
+  it("normalizes compatibility user timestamps to second-precision RFC 3339", () => {
+    const dto = publicUserToDto({
+      ...user,
+      createdAt: "2026-10-09T09:30:18.156Z",
+      updatedAt: "2026-10-09T09:30:18.156Z",
+    } as UserRow);
+    expect(dto.createTime).toBe("2026-10-09T09:30:18Z");
+    expect(dto.updateTime).toBe("2026-10-09T09:30:18Z");
+    expect(memosTimestamp("not-a-date")).toBe("not-a-date");
+  });
+
   it("maps memo fields to camelCase and uppercase enums", () => {
     expect(currentMemoToDto(memo, user)).toMatchObject({
       name: "memos/one",

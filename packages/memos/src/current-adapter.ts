@@ -9,6 +9,16 @@ import type {
 } from "@flaremo/db";
 import { memosWireRole } from "@flaremo/domain";
 
+/**
+ * Swift OpenAPI clients may reject fractional-second date-time strings. Emit
+ * second-precision RFC 3339 timestamps on the compatibility wire surface.
+ */
+export function memosTimestamp(value: string): string {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toISOString().replace(/\.\d{3}Z$/, "Z");
+}
+
 type CurrentMemoRelationRow = {
   memoId: string;
   relatedMemoId: string;
@@ -179,8 +189,8 @@ export function currentUserToDto(user: UserRow, authUser?: AuthUserRow | null) {
     displayName: user.name,
     ...(user.avatarUrl ? { avatarUrl: user.avatarUrl } : {}),
     state: "NORMAL",
-    createTime: user.createdAt,
-    updateTime: user.updatedAt,
+    createTime: memosTimestamp(user.createdAt),
+    updateTime: memosTimestamp(user.updatedAt),
   };
 }
 
@@ -192,8 +202,8 @@ export function publicUserToDto(user: UserRow, username?: string) {
     displayName: user.name,
     ...(user.avatarUrl ? { avatarUrl: user.avatarUrl } : {}),
     state: "NORMAL",
-    createTime: user.createdAt,
-    updateTime: user.updatedAt,
+    createTime: memosTimestamp(user.createdAt),
+    updateTime: memosTimestamp(user.updatedAt),
   };
 }
 
