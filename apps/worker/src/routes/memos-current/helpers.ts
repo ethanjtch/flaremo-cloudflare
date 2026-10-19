@@ -154,7 +154,7 @@ export function currentListQuery(c: Parameters<typeof getRequestContext>[0]) {
   }
   const filter = parseCurrentFilter(c.req.query("filter"));
   return {
-    page_size: parsePageSize(c.req.query("pageSize"), 50),
+    page_size: parsePageSize(c.req.query("pageSize"), 50, 200),
     page_token: c.req.query("pageToken"),
     order_by: orderBy,
     ...(state ? { state } : {}),
@@ -279,12 +279,16 @@ export function parseUpdateMask(value: string | undefined) {
   return fields;
 }
 
-export function parsePageSize(value: string | undefined, fallback: number) {
+export function parsePageSize(
+  value: string | undefined,
+  fallback: number,
+  maximum = 100,
+) {
   if (!value) return fallback;
   const parsed = parseMemosPageSize(value);
   if (parsed === null)
     throw new CompatValidationError("pageSize must be a positive integer");
-  return Math.min(parsed, 100);
+  return Math.min(parsed, maximum);
 }
 
 export function parseBearerToken(value: string) {

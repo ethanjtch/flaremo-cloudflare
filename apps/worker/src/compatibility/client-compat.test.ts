@@ -1,5 +1,6 @@
 import type { Miniflare } from "miniflare";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { parsePageSize } from "../routes/memos-current/helpers";
 import { createAppTestHarness } from "../test-support/app";
 import { createTestRuntime, TEST_PASSWORD } from "../test-support/runtime";
 import { bootstrapAndSignIn } from "../test-support/sign-in";
@@ -14,6 +15,11 @@ const { fetchCurrent } = createAppTestHarness(() => ({
 }));
 
 describe("Third-party client compatibility surface (Moe Memos, modern REST, Connect)", () => {
+  it("honors the 200-memo page size requested by Moe Memos without raising other list limits", () => {
+    expect(parsePageSize("200", 50, 200)).toBe(200);
+    expect(parsePageSize("200", 50)).toBe(100);
+  });
+
   beforeEach(async () => {
     ({ runtime: mf, env } = await createTestRuntime({
       name: "flaremo-client-compat",
