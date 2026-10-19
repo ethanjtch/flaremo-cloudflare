@@ -164,11 +164,35 @@ export function registerUserRoutes(app: Hono<HonoBindings>) {
     }
   });
 
-  app.get("/users/:user", async (c, next) => {
+  app.get("/user/me", async (c, next) => {
     if (isLegacyWireRequest(c)) return next();
     try {
       const context = await getRequestContext(c);
-      const userId = normalizeUserName(c.req.param("user"));
+      return c.json(
+        await memosCompatUserDto(context.db, context.user, context.user.id),
+      );
+    } catch (error) {
+      return currentJsonError(c, error);
+    }
+  });
+
+  app.get("/users/:param", async (c, next) => {
+    if (isLegacyWireRequest(c)) return next();
+    const param = c.req.param("param");
+    if (param.endsWith(":getStats")) {
+      try {
+        const context = await getRequestContext(c);
+        const stats = await getMemoStats(context.db, context.user, {
+          time_zone: "UTC",
+        });
+        return c.json(userStatsFromMemoStats(context.user.id, stats));
+      } catch (error) {
+        return currentJsonError(c, error);
+      }
+    }
+    try {
+      const context = await getRequestContext(c);
+      const userId = normalizeUserName(param);
       const user = await getFlaremoUserCached(context.db, userId);
       if (!user) throw new NotFoundError("User not found");
       return c.json(

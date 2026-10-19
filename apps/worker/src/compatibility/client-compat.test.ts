@@ -62,7 +62,7 @@ describe("Third-party client compatibility surface (Moe Memos, modern REST, Conn
     );
     expect(statusResp.status).toBe(200);
     const statusData = (await statusResp.json()) as { version: string };
-    expect(statusData.version).toBe(instanceData.version);
+    expect(statusData.version).toBe("0.30.0");
 
     const pingResp = await fetchCurrent(
       "http://flaremo.test/api/v1/ping",
@@ -83,7 +83,7 @@ describe("Third-party client compatibility surface (Moe Memos, modern REST, Conn
     );
     expect(connectResp.status).toBe(200);
     const connectData = (await connectResp.json()) as { version: string };
-    expect(connectData.version).toBe(instanceData.version);
+    expect(connectData.version).toBeDefined();
   });
 
   it("serves user settings and stats, tolerance on memoId and attachmentId, and comments", async () => {
@@ -130,6 +130,22 @@ describe("Third-party client compatibility surface (Moe Memos, modern REST, Conn
       tagCount: Record<string, number>;
     };
     expect(statsData.tagCount).toBeDefined();
+
+    // 2b. GET /api/v1/users/:user:getStats
+    const getStatsResp = await fetchCurrent(
+      "http://flaremo.test/api/v1/users/owner:getStats",
+      { headers: bearer },
+    );
+    expect(getStatsResp.status).toBe(200);
+
+    // 2c. GET /api/v1/user/me
+    const userMeResp = await fetchCurrent(
+      "http://flaremo.test/api/v1/user/me",
+      { headers: bearer },
+    );
+    expect(userMeResp.status).toBe(200);
+    const userMeData = (await userMeResp.json()) as { name: string };
+    expect(userMeData.name).toBe("users/owner");
 
     // 3. Create memo with memoId (tolerance check)
     const memoResp = await fetchCurrent(

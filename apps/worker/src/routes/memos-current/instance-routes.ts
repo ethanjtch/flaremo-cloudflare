@@ -1,4 +1,5 @@
-import { FLAREMO_API_VERSION } from "@flaremo/contracts";
+export const COMPAT_MEMOS_VERSION = "0.30.0";
+
 import { currentUserToDto, publicUserToDto } from "@flaremo/memos";
 import type { Context, Hono } from "hono";
 import {
@@ -44,7 +45,7 @@ export function registerInstanceRoutes(app: Hono<HonoBindings>) {
     try {
       const admin = await resolveInstanceProfileAdmin(c);
       return c.json({
-        version: FLAREMO_API_VERSION,
+        version: COMPAT_MEMOS_VERSION,
         demo: false,
         instanceUrl: c.env.FLAREMO_PUBLIC_URL ?? new URL(c.req.url).origin,
         admin,
@@ -59,7 +60,7 @@ export function registerInstanceRoutes(app: Hono<HonoBindings>) {
     try {
       const admin = await resolveInstanceProfileAdmin(c);
       return c.json({
-        version: FLAREMO_API_VERSION,
+        version: COMPAT_MEMOS_VERSION,
         demo: false,
         instanceUrl: c.env.FLAREMO_PUBLIC_URL ?? new URL(c.req.url).origin,
         admin,
@@ -73,10 +74,10 @@ export function registerInstanceRoutes(app: Hono<HonoBindings>) {
     if (isLegacyWireRequest(c)) return next();
     return c.json({
       profile: {
-        version: FLAREMO_API_VERSION,
+        version: COMPAT_MEMOS_VERSION,
         mode: "prod",
       },
-      version: FLAREMO_API_VERSION,
+      version: COMPAT_MEMOS_VERSION,
     });
   });
 
@@ -84,10 +85,10 @@ export function registerInstanceRoutes(app: Hono<HonoBindings>) {
     if (isLegacyWireRequest(c)) return next();
     return c.json({
       profile: {
-        version: FLAREMO_API_VERSION,
+        version: COMPAT_MEMOS_VERSION,
         mode: "prod",
       },
-      version: FLAREMO_API_VERSION,
+      version: COMPAT_MEMOS_VERSION,
     });
   });
 }
