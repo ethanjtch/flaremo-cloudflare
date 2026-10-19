@@ -48,14 +48,32 @@ const attachment = {
 } as unknown as AttachmentRow;
 
 describe("current Memos wire adapter", () => {
-  it("normalizes compatibility user timestamps to second-precision RFC 3339", () => {
-    const dto = publicUserToDto({
+  it("normalizes compatibility timestamps to second-precision RFC 3339", () => {
+    const timestamp = "2026-10-09T09:30:18.156Z";
+    const fractionalUser = {
       ...user,
-      createdAt: "2026-10-09T09:30:18.156Z",
-      updatedAt: "2026-10-09T09:30:18.156Z",
-    } as UserRow);
-    expect(dto.createTime).toBe("2026-10-09T09:30:18Z");
-    expect(dto.updateTime).toBe("2026-10-09T09:30:18Z");
+      createdAt: timestamp,
+      updatedAt: timestamp,
+    } as UserRow;
+    const fractionalMemo = {
+      ...memo,
+      createdAt: timestamp,
+      updatedAt: timestamp,
+    } as MemoRow;
+    const fractionalAttachment = {
+      ...attachment,
+      createdAt: timestamp,
+    } as AttachmentRow;
+
+    expect(publicUserToDto(fractionalUser).createTime).toBe(
+      "2026-10-09T09:30:18Z",
+    );
+    expect(currentMemoToDto(fractionalMemo, fractionalUser).createTime).toBe(
+      "2026-10-09T09:30:18Z",
+    );
+    expect(currentAttachmentToDto(fractionalAttachment).createTime).toBe(
+      "2026-10-09T09:30:18Z",
+    );
     expect(memosTimestamp("not-a-date")).toBe("not-a-date");
   });
 
@@ -64,8 +82,8 @@ describe("current Memos wire adapter", () => {
       name: "memos/one",
       state: "NORMAL",
       visibility: "PROTECTED",
-      createTime: memo.createdAt,
-      updateTime: memo.updatedAt,
+      createTime: memosTimestamp(memo.createdAt),
+      updateTime: memosTimestamp(memo.updatedAt),
       tags: ["one", "#two"],
       pinned: true,
       property: { hasLink: true, hasCode: false, title: "Heading" },
@@ -77,7 +95,7 @@ describe("current Memos wire adapter", () => {
   it("uses protobuf JSON int64 strings for attachment size", () => {
     expect(currentAttachmentToDto(attachment)).toEqual({
       name: "attachments/file",
-      createTime: attachment.createdAt,
+      createTime: memosTimestamp(attachment.createdAt),
       filename: "note.txt",
       type: "text/plain",
       size: "5",
@@ -111,7 +129,7 @@ describe("current Memos wire adapter", () => {
     } as never;
     expect(currentShareToDto(share)).toEqual({
       name: "memos/one/shares/opaque-share",
-      createTime: "2026-08-03T00:00:00.000Z",
+      createTime: "2026-08-03T00:00:00Z",
     });
 
     expect(

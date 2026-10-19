@@ -50,8 +50,8 @@ export function currentMemoToDto(
     name: memo.id,
     state: currentMemoState(memo.status),
     creator: memo.userId,
-    createTime: memo.createdAt,
-    updateTime: memo.updatedAt,
+    createTime: memosTimestamp(memo.createdAt),
+    updateTime: memosTimestamp(memo.updatedAt),
     content: memo.content,
     visibility: currentVisibility(memo.visibility),
     tags: Array.isArray(payload.tags)
@@ -99,7 +99,7 @@ export function currentMemosToListResponse(input: {
 export function currentAttachmentToDto(attachment: AttachmentRow) {
   return {
     name: attachment.id,
-    createTime: attachment.createdAt,
+    createTime: memosTimestamp(attachment.createdAt),
     filename: attachment.filename,
     type: attachment.contentType ?? "application/octet-stream",
     // Protobuf JSON encodes int64 as a decimal string.
@@ -121,7 +121,7 @@ export function currentReactionToDto(reaction: ReactionRow) {
     creator: reaction.creatorId,
     contentId,
     reactionType: reaction.reactionType,
-    createTime: reaction.createdAt,
+    createTime: memosTimestamp(reaction.createdAt),
   };
 }
 
@@ -157,8 +157,8 @@ export function currentAttachmentsToListResponse(
 export function currentShareToDto(share: ShareRow) {
   return {
     name: `${share.memoId}/shares/${share.token}`,
-    createTime: share.createdAt,
-    ...(share.expiresAt ? { expireTime: share.expiresAt } : {}),
+    createTime: memosTimestamp(share.createdAt),
+    ...(share.expiresAt ? { expireTime: memosTimestamp(share.expiresAt) } : {}),
   };
 }
 
