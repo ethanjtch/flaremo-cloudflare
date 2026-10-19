@@ -148,7 +148,9 @@ class CloudflareVectorIndex implements VectorIndex {
   async query(vector: number[], topK: number, namespace?: string) {
     const result = await this.index.query(vector, {
       topK,
-      returnMetadata: false,
+      // The binding forwards this verbatim as JSON; the runtime only accepts
+      // the string levels now, and `false` produces a 40026 parse error.
+      returnMetadata: "none",
       // `namespace` is a first-class Vectorize query option; routing it
       // through `filter` would match it against vector metadata instead.
       ...(namespace ? { namespace } : {}),
