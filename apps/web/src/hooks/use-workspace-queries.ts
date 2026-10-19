@@ -13,6 +13,7 @@ import {
   type MemoStatsResponse,
   semanticSearchMemos,
   type Task,
+  type VectorUsageReport,
 } from "@/api";
 import type { ExplorerView as ViewMode } from "@/components/flaremo-explorer";
 import { todayKey } from "@/lib/calendar-date";
@@ -46,6 +47,24 @@ type WorkspaceQueryFilters = {
 };
 
 /**
+ * Semantic search is hidden when the plan has no budget for it (quota 0)
+ * or the capability itself is disabled server-side (provider === "none").
+ * Self-hosted deployments run with unlimited quotas where the limit is null.
+ */
+export function isSemanticSearchAvailable(
+  vectorUsage?: Pick<VectorUsageReport, "provider" | "plan"> | null,
+): boolean {
+  if (!vectorUsage) return false;
+  if (vectorUsage.provider === "none") return false;
+  const plan = vectorUsage.plan;
+  if (!plan) return false;
+  const limit =
+    plan.user?.limits.semanticSearchQueriesPerMonth ??
+    plan.limits.semanticSearchQueriesPerMonth;
+  return limit === null || (typeof limit === "number" && limit > 0);
+}
+
+/**
  * Every server read behind the workspace — memo timeline and stats, tag
  * hierarchy, the signed-in member and their capture seat, semantic/keyword
  * search, and the "on this day" teaser — plus the derived lists and flags the
@@ -69,16 +88,10 @@ export function useWorkspaceQueries({
     staleTime: 5 * 60 * 1000,
     retry: false,
   });
-  // Semantic search is hidden when the plan has no budget for it (quota 0)
-  // or the capability itself is disabled server-side.
-  const semanticEnabled = useMemo(() => {
-    const plan = vectorUsageQuery.data?.plan;
-    if (!plan) return false;
-    const limit =
-      plan.user?.limits.semanticSearchQueriesPerMonth ??
-      plan.limits.semanticSearchQueriesPerMonth;
-    return typeof limit === "number" && limit > 0;
-  }, [vectorUsageQuery.data]);
+  const semanticEnabled = useMemo(
+    () => isSemanticSearchAvailable(vectorUsageQuery.data),
+    [vectorUsageQuery.data],
+  );
 
   const isSemanticSearch =
     semanticMode && semanticEnabled && isSearching && !dayFilter;
