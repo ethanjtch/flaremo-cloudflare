@@ -70,25 +70,10 @@ export function registerInstanceRoutes(app: Hono<HonoBindings>) {
     }
   });
 
-  app.get("/status", async (c, next) => {
-    if (isLegacyWireRequest(c)) return next();
-    return c.json({
-      profile: {
-        version: COMPAT_MEMOS_VERSION,
-        mode: "prod",
-      },
-      version: COMPAT_MEMOS_VERSION,
-    });
-  });
-
-  app.get("/ping", async (c, next) => {
-    if (isLegacyWireRequest(c)) return next();
-    return c.json({
-      profile: {
-        version: COMPAT_MEMOS_VERSION,
-        mode: "prod",
-      },
-      version: COMPAT_MEMOS_VERSION,
-    });
-  });
+  // NOTE: do NOT advertise a version at /status or /ping. Moe Memos probes
+  // GET /api/v1/status first and, if it carries a version string, classifies
+  // the instance as a legacy v0 (Memos 0.21.x) server and then talks the v0
+  // wire protocol (integer user ids, /api/v1/memo, ...) which FlareMo does not
+  // implement. Leaving these unrouted makes the v0 probe fail and the client
+  // fall through to the modern v1 profile probe below.
 }

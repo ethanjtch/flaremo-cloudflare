@@ -65,9 +65,9 @@ describe("isSemanticSearchAvailable", () => {
   });
 
   it("hides semantic search when the provider is disabled server-side", () => {
-    expect(
-      isSemanticSearchAvailable(usage(null, { provider: "none" })),
-    ).toBe(false);
+    expect(isSemanticSearchAvailable(usage(null, { provider: "none" }))).toBe(
+      false,
+    );
   });
 
   it("hides semantic search until the usage report arrives", () => {

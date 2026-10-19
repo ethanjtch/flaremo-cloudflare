@@ -54,22 +54,23 @@ describe("Third-party client compatibility surface (Moe Memos, modern REST, Conn
     >;
     expect(workspaceData.version).toBe(instanceData.version);
 
-    // 3. GET /api/v1/status & /api/v1/ping
+    // 3. Legacy v0 probe endpoints must NOT advertise a version: Moe Memos
+    //    would otherwise classify this instance as a v0 (Memos 0.21.x) server
+    //    and then fail to decode v0 payloads.
     const statusResp = await fetchCurrent(
       "http://flaremo.test/api/v1/status",
       { method: "GET" },
       { authenticated: false },
     );
-    expect(statusResp.status).toBe(200);
-    const statusData = (await statusResp.json()) as { version: string };
-    expect(statusData.version).toBe("0.30.0");
+    expect(statusResp.status).toBe(404);
 
     const pingResp = await fetchCurrent(
       "http://flaremo.test/api/v1/ping",
       { method: "GET" },
       { authenticated: false },
     );
-    expect(pingResp.status).toBe(200);
+    expect(pingResp.status).toBe(404);
+    expect(instanceData.version).toBe("0.30.0");
 
     // 4. Connect RPC: memos.api.v1.WorkspaceService/GetWorkspaceProfile
     const connectResp = await fetchCurrent(
@@ -138,14 +139,12 @@ describe("Third-party client compatibility surface (Moe Memos, modern REST, Conn
     );
     expect(getStatsResp.status).toBe(200);
 
-    // 2c. GET /api/v1/user/me
+    // 2c. Legacy v0 current-user endpoint is intentionally not served.
     const userMeResp = await fetchCurrent(
       "http://flaremo.test/api/v1/user/me",
       { headers: bearer },
     );
-    expect(userMeResp.status).toBe(200);
-    const userMeData = (await userMeResp.json()) as { name: string };
-    expect(userMeData.name).toBe("users/owner");
+    expect(userMeResp.status).not.toBe(200);
 
     // 3. Create memo with memoId (tolerance check)
     const memoResp = await fetchCurrent(

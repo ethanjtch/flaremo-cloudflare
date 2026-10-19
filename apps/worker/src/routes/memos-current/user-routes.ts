@@ -164,13 +164,32 @@ export function registerUserRoutes(app: Hono<HonoBindings>) {
     }
   });
 
-  app.get("/user/me", async (c, next) => {
+  app.get("/users/:user/settings", async (c, next) => {
     if (isLegacyWireRequest(c)) return next();
     try {
       const context = await getRequestContext(c);
-      return c.json(
-        await memosCompatUserDto(context.db, context.user, context.user.id),
+      const stored = await getStoredSetting(
+        context.db,
+        context.user,
+        "memos.user.GENERAL",
       );
+      const val =
+        stored?.value && typeof stored.value === "object"
+          ? (stored.value as Record<string, unknown>)
+          : {};
+      return c.json({
+        settings: [
+          {
+            name: `users/${c.req.param("user")}/settings/GENERAL`,
+            generalSetting: {
+              locale: (val.locale as string) ?? "en",
+              memoVisibility: (val.memoVisibility as string) ?? "PRIVATE",
+              theme: (val.theme as string) ?? "",
+            },
+          },
+        ],
+        totalSize: 1,
+      });
     } catch (error) {
       return currentJsonError(c, error);
     }
