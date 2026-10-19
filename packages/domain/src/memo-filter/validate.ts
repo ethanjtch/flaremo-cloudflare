@@ -220,6 +220,33 @@ function visitMemoFilterAst(node: MemoFilterAst, boundIds: Set<string>) {
       visitMemoFilterAst(args[1], boundIds);
       return;
     }
+    case "in": {
+      const args = binaryAstArgs(node);
+      if (!args) rejectUnsupported("in requires two operands");
+      const field = identifierName(args[0]);
+      if (
+        !field ||
+        (!memoFilterStringFields.has(field) && !boundIds.has(field))
+      ) {
+        rejectUnsupported("in is only supported for string fields");
+      }
+      const values = args[1];
+      if (
+        values.op !== "list" ||
+        !Array.isArray(values.args) ||
+        !values.args.every(
+          (item) =>
+            isAstNode(item) &&
+            item.op === "value" &&
+            typeof item.args === "string",
+        )
+      ) {
+        rejectUnsupported("in requires a list of string literals");
+      }
+      visitMemoFilterAst(args[0], boundIds);
+      visitMemoFilterAst(args[1], boundIds);
+      return;
+    }
     case "+":
     case "-":
     case "*":

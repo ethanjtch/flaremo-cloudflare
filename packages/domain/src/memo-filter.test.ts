@@ -40,6 +40,14 @@ describe("Memos CEL filter", () => {
     expect(matches?.(memo, user)).toBe(true);
   });
 
+  it("supports CEL membership filters for memo enum fields", async () => {
+    const publicOrProtected = await compileMemoFilter(
+      'visibility in ["PUBLIC", "PROTECTED"]',
+    );
+    expect(publicOrProtected?.(memo, user)).toBe(true);
+    expect(publicOrProtected?.completeInSql).toBe(true);
+  });
+
   it("supports timestamp and now/duration expressions", async () => {
     expect(
       (

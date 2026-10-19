@@ -146,6 +146,13 @@ describe("Third-party client compatibility surface (Moe Memos, modern REST, Conn
     );
     expect(userMeResp.status).not.toBe(200);
 
+    // Moe Memos' discover screen uses this CEL membership filter.
+    const discoverResp = await fetchCurrent(
+      "http://flaremo.test/api/v1/memos?pageSize=20&filter=visibility%20in%20%5B%22PUBLIC%22%2C%22PROTECTED%22%5D",
+      { headers: bearer },
+    );
+    expect(discoverResp.status).toBe(200);
+
     // 3. Create memo with memoId (tolerance check)
     const memoResp = await fetchCurrent(
       "http://flaremo.test/api/v1/memos?memoId=custom-client-id",
