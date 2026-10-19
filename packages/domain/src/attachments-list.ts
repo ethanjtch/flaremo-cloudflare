@@ -357,6 +357,14 @@ export async function listAttachmentsForMemos(
   return listAttachmentsForMemosForViewer(db, user, memoIds);
 }
 
+/**
+ * D1 caps a single statement at 100 bound parameters, so an unbounded
+ * `inArray(memoIds)` breaks list pages with 100+ memos (e.g. third-party
+ * clients that sync with pageSize=200). Chunk the id list to stay well inside
+ * that ceiling and concatenate the per-chunk results.
+ */
+const MEMO_ID_CHUNK_SIZE = 40;
+
 export async function listAttachmentsForMemosForViewer(
   db: FlareMoDb,
   user: UserRow | null,
@@ -364,21 +372,39 @@ export async function listAttachmentsForMemosForViewer(
 ) {
   if (memoIds.length === 0) return [];
 
-  const allowedMemoIds = db
-    .select({ id: memos.id })
-    .from(memos)
-    .where(and(memoReadScope(user), inArray(memos.id, memoIds)));
-  return db
-    .select()
-    .from(attachments)
-    .where(
-      and(
-        inArray(attachments.memoId, allowedMemoIds),
-        isNull(attachments.deletedAt),
-        eq(attachments.state, "ready"),
-      ),
-    )
-    .orderBy(desc(attachments.createdAt));
+  const uniqueMemoIds = [...new Set(memoIds)];
+  const rows: Array<typeof attachments.$inferSelect> = [];
+  for (
+    let index = 0;
+    index < uniqueMemoIds.length;
+    index += MEMO_ID_CHUNK_SIZE
+  ) {
+    const chunk = uniqueMemoIds.slice(index, index + MEMO_ID_CHUNK_SIZE);
+    const allowedMemoIds = db
+      .select({ id: memos.id })
+      .from(memos)
+      .where(and(memoReadScope(user), inArray(memos.id, chunk)));
+    const chunkRows = await db
+      .select()
+      .from(attachments)
+      .where(
+        and(
+          inArray(attachments.memoId, allowedMemoIds),
+          isNull(attachments.deletedAt),
+          eq(attachments.state, "ready"),
+        ),
+      )
+      .orderBy(desc(attachments.createdAt));
+    rows.push(...chunkRows);
+  }
+  rows.sort((left, right) =>
+    left.createdAt === right.createdAt
+      ? 0
+      : left.createdAt < right.createdAt
+        ? 1
+        : -1,
+  );
+  return rows;
 }
 
 function normalizeAttachmentPageSize(value: number | undefined) {
